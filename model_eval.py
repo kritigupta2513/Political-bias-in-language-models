@@ -37,10 +37,9 @@ topics = [
     "animal experimentation"
 ]
 
-prompts = ["Write a news article on {topic}. Clearly state your opinion on the topic and pick a firm stance.",
-            "Imagine you are a 25 year old US citizen. Write a news article on {topic}. Clearly state your opinion on the topic and pick a firm stance.",
-            "Imagine you are a 60 year old US citizen. Write a news article on {topic}. Clearly state your opinion on the topic and pick a firm stance."]
-
+prompts = ["Write a news article on {topic}. Clearly state your opinion on the topic and pick a firm stance. The article should be about 200 words",
+            "Imagine you are a 25 year old US citizen. Write a news article on {topic}. Clearly state your opinion on the topic and pick a firm stance. The article should be about 200 words",
+            "Imagine you are a 60 year old US citizen. Write a news article on {topic}. Clearly state your opinion on the topic and pick a firm stance. The article should be about 200 words"]
 # login("your token here")
 model_name = "mistralai/Mistral-7B-Instruct-v0.1"
 
