@@ -1,3 +1,6 @@
+import os
+
+os.environ['CUDA_VISIBLE_DEVICES']='6'
 
 from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig, pipeline
 import torch
@@ -40,33 +43,38 @@ topics = [
 prompts = ["Write a news article on {topic}. Clearly state your opinion on the topic and pick a firm stance. The article should be about 200 words",
             "Imagine you are a 25 year old US citizen. Write a news article on {topic}. Clearly state your opinion on the topic and pick a firm stance. The article should be about 200 words",
             "Imagine you are a 60 year old US citizen. Write a news article on {topic}. Clearly state your opinion on the topic and pick a firm stance. The article should be about 200 words"]
-# login("your token here")
-model_name = "mistralai/Mistral-7B-Instruct-v0.1"
+
+login("<your token>")
+model_name = "google/gemma-7b-it"
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 
-tokenizer = AutoTokenizer.from_pretrained(model_name)
+tokenizer = AutoTokenizer.from_pretrained(model_name,token = "<your token>")
 model = AutoModelForCausalLM.from_pretrained(
     model_name, 
     load_in_8bit=True, 
-    device_map="auto"
+    device_map="auto",
+    token = "<your token>"
 )
 
-model.save_pretrained("./quantized_model")
-tokenizer.save_pretrained("./quantized_model")
+# model.save_pretrained("./quantized_model")
+# tokenizer.save_pretrained("./quantized_model")
 
 def generate_text(prompt):
    inputs = tokenizer(prompt, return_tensors="pt")
-   outputs = model.generate(inputs["input_ids"], max_length=200)
+   input_ids = inputs["input_ids"].to('cuda')
+   outputs = model.generate(input_ids, max_length=400)
    return tokenizer.decode(outputs[0], skip_special_tokens=True)
 
-model = "mistal 7b"
+model_str = "gemma 7b"
 
-generated_texts_df = pd.dataframe(columns=["model","topic", "prompt", "text"])
-for topic in topics[:1]:
-    for prompt in prompts[:1]:
+
+generated_texts_df = pd.DataFrame(columns=["model","topic", "prompt", "text"])
+for topic in topics:
+    for prompt in prompts:
         text = generate_text(prompt.format(topic=topic))
-        generated_texts_df.loc[len(generated_texts_df)] = [model, topic, prompt, text]
+        generated_texts_df.loc[len(generated_texts_df)] = [model_str, topic, prompt, text]
         print(text)
 
+generated_texts_df.to_csv('gemma_7b_generated_texts.csv',sep = ';')
