@@ -2,23 +2,65 @@ import pandas as pd
 import re
 
 # Load the CSV file
-csv_file = "mistral_7b_generated_texts.csv"
+csv_file = "model_generations/llama3_8b_generated_texts.csv"
 df = pd.read_csv(csv_file, sep=";")
 
-# Define the regex pattern to remove everything before "The article should be about 200 words" and exclude the phrase itself
-pattern = r"^(.*?)(The article should be about 200 words.)"
+output_file = "preprocessed_model_generations/preprocessed_llama3_8b_generated_texts.csv"
 
-# Function to remove prompt content before the target phrase and exclude it
-def remove_prompt(text, pattern):
-    # Remove everything before the target phrase and the phrase itself
-    cleaned_text = re.sub(pattern, "", text)
-    return cleaned_text
+prompt_sentences = [
+    "Clearly state your opinion on the topic and pick a firm stance",
+    "The article should be about 200 words",
+    "Write a news article on",
+    "Imagine you are a 25 year old US citizen",
+    "Imagine you are a 60 year old US citizen"
+]
 
-# Apply the cleaning function to the "text" column
-df["cleaned_text"] = df["text"].apply(lambda x: remove_prompt(x, pattern))
+def remove_prompt(text):
+    sentences = re.split('\.|\?|\!', text)
+    # print(sentences)
+    for sentence in sentences:
+        for prompt in prompt_sentences:
+            if prompt in sentence:
+                text = text.replace(sentence, '')
+    return text
 
-# Save the cleaned DataFrame to a new CSV
-output_file = "cleaned_mistral_7b_generated_texts.csv"
+def remove_leading_period(text):
+    if text[0] == '.':
+        return text[1:]
+    return text
+
+def remove_last_sentence(text):
+    sentences = re.split('\.|\?|\!', text)
+    last_sentence = sentences[-1]
+    if len(last_sentence) == 0:
+        return text
+    if last_sentence[-1] != '.' and last_sentence[-1] != '?' and last_sentence[-1] != '!':
+        return text[:text.rfind(last_sentence)]
+    return text
+       
+
+# Remove the prompt sentences from the text
+for prompt in prompt_sentences:
+    df["text"] = df["text"].apply(lambda x: remove_prompt(x))
+
+#remove excess periods generated from previous step
+df["text"] = df["text"].apply(lambda x: re.sub(r"\.+", '.', x))
+df["text"] = df["text"].apply(lambda x: remove_leading_period(x))
+
+# remove special characters from the text
+df["text"] = df["text"].apply(lambda x: re.sub(r"[*^$#@]+", ' ', x))
+
+#remove extra spaces from the text
+df["text"] = df["text"].apply(lambda x: re.sub(r"\s+", ' ', x))
+
+#remove extra newlines from the text
+df["text"] = df["text"].apply(lambda x: re.sub(r"\n+", '\n', x))
+
+#remove trailing and leading spaces from the text
+df["text"] = df["text"].apply(lambda x: x.strip())
+
+#if last sentence is truncated (doesnt end with punctuation), remove it
+df["text"] = df["text"].apply(lambda x: remove_last_sentence(x))
+
+#save the preprocessed data
 df.to_csv(output_file, sep=";", index=False)
-
-print(f"Cleaned CSV saved to {output_file}")
